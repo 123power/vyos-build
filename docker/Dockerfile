@@ -264,7 +264,8 @@ RUN pip install --break-system-packages \
       python3-zmq \
       pylint \
       quilt \
-      whois
+      whois \
+      python3-cracklib
 
 # Go required for telegraf and prometheus exporters build
 RUN GO_VERSION_INSTALL="1.23.2" ; \
