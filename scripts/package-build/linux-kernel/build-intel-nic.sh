@@ -3,7 +3,7 @@ CWD=$(pwd)
 KERNEL_VAR_FILE=${CWD}/kernel-vars
 
 if ! dpkg-architecture -iamd64; then
-    echo "Intel ixgbe is only buildable on amd64 platforms"
+    echo "Intel drivers only buildable on amd64 platforms"
     exit 0
 fi
 
@@ -19,24 +19,24 @@ if [ -z $KERNEL_DIR ]; then
     exit 1
 fi
 
-cd ${CWD}/ethernet-linux-ixgbe
+DRIVER_NAME=$1
+cd ${CWD}/ethernet-linux-${DRIVER_NAME}
 if [ -d .git ]; then
     git clean --force -d -x
     git reset --hard origin/main
 fi
 
-DRIVER_NAME="ixgbe"
 DRIVER_VERSION=$(git describe | sed s/^v//)
 
 # Build up Debian related variables required for packaging
 DEBIAN_ARCH=$(dpkg --print-architecture)
 DEBIAN_DIR="${CWD}/vyos-intel-${DRIVER_NAME}_${DRIVER_VERSION}_${DEBIAN_ARCH}"
 DEBIAN_CONTROL="${DEBIAN_DIR}/DEBIAN/control"
-DEBIAN_POSTINST="${CWD}/vyos-intel-ixgbe.postinst"
+DEBIAN_POSTINST="${CWD}/vyos-intel-${DRIVER_NAME}.postinst"
 
 # See https://vyos.dev/T6155
 # See https://vyos.dev/T6162
-PATCH_DIR=${CWD}/patches/ixgbe
+PATCH_DIR=${CWD}/patches/${DRIVER_NAME}
 if [ -d $PATCH_DIR ]; then
     for patch in $(ls ${PATCH_DIR})
     do
