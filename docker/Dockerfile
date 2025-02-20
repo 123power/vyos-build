@@ -108,6 +108,7 @@ RUN apt-get update && apt-get install -y \
       debootstrap \
       live-build \
       gdisk \
+      sbsigntool \
       dosfstools
 
 # Packages for TPM test
