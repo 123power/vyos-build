@@ -160,13 +160,6 @@ RUN apt-get update && apt-get install -y \
       libpcre3-dev \
       libffi-dev
 
-# Build libvyosconfig
-RUN eval $(opam env --root=/opt/opam --set-root) && \
-    git clone https://github.com/vyos/libvyosconfig.git /tmp/libvyosconfig && \
-    cd /tmp/libvyosconfig && git checkout 677d1e2bf8109b9fd4da60e20376f992b747e384 && \
-    dpkg-buildpackage -uc -us -tc -b && \
-    dpkg -i /tmp/libvyosconfig0_*_$(dpkg-architecture -qDEB_HOST_ARCH).deb
-
 # Packages needed for open-vmdk
 RUN apt-get update && apt-get install -y \
       zlib1g-dev
