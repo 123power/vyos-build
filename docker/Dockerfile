@@ -368,7 +368,7 @@ RUN sed "s/^%sudo.*/%sudo\tALL=(ALL) NOPASSWD:ALL/g" -i /etc/sudoers && \
     chmod a+s /usr/sbin/useradd /usr/sbin/groupadd
 
 # Ensure sure all users have access to our OCAM and Go installation
-RUN echo "eval \$(opam env --root=/opt/opam --set-root)" >> /etc/skel/.bashrc && \
+RUN echo "$(opam env --root=/opt/opam --set-root)" >> /etc/skel/.bashrc && \
     echo "export PATH=/opt/go/bin:\$PATH" >> /etc/skel/.bashrc
 
 # Rise upper limit for UID when working in an Active Direcotry integrated
