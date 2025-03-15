@@ -1,4 +1,4 @@
-# Copyright (C) 2018-2024 VyOS maintainers and contributors
+# Copyright (C) 2018-2025 VyOS maintainers and contributors
 #
 # This program is free software; you can redistribute it and/or modify
 # in order to easy exprort images built to "external" world
@@ -367,9 +367,8 @@ RUN sed "s/^%sudo.*/%sudo\tALL=(ALL) NOPASSWD:ALL/g" -i /etc/sudoers && \
     echo "vyos_bld\tALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     chmod a+s /usr/sbin/useradd /usr/sbin/groupadd
 
-# Ensure sure all users have access to our OCAM and Go installation
-RUN echo "$(opam env --root=/opt/opam --set-root)" >> /etc/skel/.bashrc && \
-    echo "export PATH=/opt/go/bin:\$PATH" >> /etc/skel/.bashrc
+# Ensure sure all users have access to Go
+RUN echo "export PATH=/opt/go/bin:\$PATH" >> /etc/skel/.bashrc
 
 # Rise upper limit for UID when working in an Active Direcotry integrated
 # environment. This solves the warning: vyos_bld's uid 1632000007 outside of the
