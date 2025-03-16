@@ -1,4 +1,6 @@
+.build/config
 build/*
+config/*
 *.pyc
 packer_build/*
 packer_cache/*
