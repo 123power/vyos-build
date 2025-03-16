@@ -7,7 +7,6 @@ packer_cache/*
 key/*
 packages/*
 !packages/*/
-data/live-build-config/includes.chroot/var/lib/shim-signed/mok/*
 /testinstall*.img
 /testinstall*.efivars
 /*.qcow2
