@@ -611,6 +611,7 @@ DOCUMENTATION_URL="{build_config['documentation_url']}"
         ## Configure live-build
         lb_config_tmpl = jinja2.Template("""
         lb config noauto \
+                --no-color \
                 --apt-indices false \
                 --apt-options "--yes -oAPT::Get::allow-downgrades=true" \
                 --apt-recommends false \
