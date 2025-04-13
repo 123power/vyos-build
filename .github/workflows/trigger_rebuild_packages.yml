@@ -53,6 +53,8 @@ jobs:
               - 'scripts/package-build/kea/**'
             keepalived:
               - 'scripts/package-build/keepalived/**'
+            libnss-mapuser:
+              - 'scripts/package-build/libnss-mapuser/**'
             libpam-radius-auth:
               - 'scripts/package-build/libpam-radius-auth/**'
             linux-kernel:
@@ -165,6 +167,10 @@ jobs:
 
           if [ "${{ steps.changes.outputs.keepalived }}" == "true" ]; then
             trigger_build "keepalived"
+          fi
+
+          if [ "${{ steps.changes.outputs.libnss-mapuser }}" == "true" ]; then
+            trigger_build "libnss-mapuser"
           fi
 
           if [ "${{ steps.changes.outputs.libpam-radius-auth }}" == "true" ]; then
