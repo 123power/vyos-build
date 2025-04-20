@@ -1,6 +1,7 @@
 #!/bin/sh
 
 echo I: Disabling services
+systemctl disable syslog.service
 systemctl disable rsyslog.service
 systemctl disable arpwatch.service
 systemctl disable smartd.service
