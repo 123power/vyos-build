@@ -618,7 +618,7 @@ DOCUMENTATION_URL="{build_config['documentation_url']}"
         lb config noauto \
                 --no-color \
                 --apt-indices false \
-                --apt-options "--yes -oAPT::Get::allow-downgrades=true" \
+                --apt-options "--yes" \
                 --apt-recommends false \
                 --architecture "{{architecture}}" \
                 --archive-areas "{{debian_archive_areas}}" \
