@@ -88,7 +88,8 @@ RUN apt-get update && apt-get install -y \
       po4a \
       openssh-client \
       jq \
-      socat
+      socat \
+      python-is-python3
 
 # Packages needed for vyos-build
 RUN apt-get update && apt-get install -y \
@@ -198,34 +199,7 @@ RUN wget https://salsa.debian.org/klausenbusk-guest/debootstrap/commit/a9a603b17
     dpkg-buildpackage -us -uc && \
     sudo dpkg -i ../debootstrap*.deb
 
-# Packages needed for Linux Kernel
-# cmake required by accel-ppp
-RUN apt-get update && apt-get install -y \
-      cmake \
-      gnupg2 \
-      rsync \
-      libelf-dev \
-      libncurses5-dev \
-      flex \
-      bison \
-      bc \
-      kmod \
-      cpio \
-      python-is-python3 \
-      dwarves \
-      nasm \
-      rdfind
-
-# Packages needed for Intel QAT out-of-tree drivers
 # FPM is used when generation Debian pckages for e.g. Intel QAT drivers
-RUN apt-get update && apt-get install -y \
-      pciutils \
-      yasm \
-      ruby \
-      libudev-dev \
-      ruby-dev \
-      rubygems \
-      build-essential
 RUN gem install --no-document fpm
 
 # Packages needed for vyos-1x
@@ -322,12 +296,6 @@ RUN if dpkg-architecture -iarm64; then \
       grub-efi-arm; \
     fi
 
-# Packages needed for openvpn-otp
-RUN apt-get update && apt-get install -y \
-      debhelper \
-      libssl-dev \
-      openvpn
-
 # Packages needed for OWAMP/TWAMP (service sla)
 RUN git clone -b 4.4.6 https://github.com/perfsonar/i2util.git /tmp/i2util && \
       cd /tmp/i2util && \
@@ -340,29 +308,10 @@ RUN apt-get update && apt-get install -y \
       udev \
       zip
 
-# Packages needed for Accel-PPP
-# XXX: please note that this must be installed after nftable dependencies - otherwise
-# APT will remove liblua5.3-dev which breaks the Accel-PPP build
-# With bookworm, updated to libssl3 (Note: https://github.com/accel-ppp/accel-ppp/issues/68)
-RUN apt-get update && apt-get install -y \
-      liblua5.3-dev \
-      libssl3 \
-      libssl-dev \
-      libpcre3-dev
-
 # debmake: a native Debian tool for preparing sources for packaging
 RUN apt-get update && apt-get install -y \
       debmake \
       python3-debian
-
-# Packages for jool
-RUN apt-get update && apt-get install -y \
-      libnl-genl-3-dev \
-      libxtables-dev
-
-# Packages needed for nftables
-RUN apt-get update && apt-get install -y \
-      asciidoc-base
 
 # Allow password-less 'sudo' for all users in group 'sudo'
 RUN sed "s/^%sudo.*/%sudo\tALL=(ALL) NOPASSWD:ALL/g" -i /etc/sudoers && \
