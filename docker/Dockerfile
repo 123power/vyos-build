@@ -124,9 +124,10 @@ RUN if dpkg-architecture -ii386 || dpkg-architecture -iamd64; then \
 
 # Building libvyosconf requires a full configured OPAM/OCaml setup
 RUN apt-get update && apt-get install -y \
+      quilt \
       debhelper \
       libffi-dev \
-      libpcre3-dev \
+      libpcre2-dev \
       unzip
 
 # Update certificate store to not crash ocaml package install
@@ -136,17 +137,15 @@ RUN dpkg-reconfigure ca-certificates; \
       echo "cacert=/etc/ssl/certs/ca-certificates.crt" >> ~/.curlrc; \
     fi
 
-# Installing OCAML needed to compile libvyosconfig
+# Installing OCaml needed to compile libvyosconfig
 RUN curl https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh \
       --output /tmp/opam_install.sh --retry 10 --retry-delay 5 && \
     sed -i 's/read_tty BINDIR/BINDIR=""/' /tmp/opam_install.sh && sh /tmp/opam_install.sh && \
     opam init --root=/opt/opam --comp=${OCAML_VERSION} --disable-sandboxing --no-setup
 
-RUN eval $(opam env --root=/opt/opam --set-root) && \
-    opam pin add pcre https://github.com/mmottl/pcre-ocaml.git#0c4ca03a -y
-
 RUN eval $(opam env --root=/opt/opam --set-root) && opam install -y \
       re \
+      pcre2 \
       num \
       ctypes \
       ctypes-foreign \
@@ -154,12 +153,6 @@ RUN eval $(opam env --root=/opt/opam --set-root) && opam install -y \
       containers \
       fileutils \
       xml-light
-
-# Packages needed for libvyosconfig
-RUN apt-get update && apt-get install -y \
-      quilt \
-      libpcre3-dev \
-      libffi-dev
 
 # Packages needed for open-vmdk
 RUN apt-get update && apt-get install -y \
