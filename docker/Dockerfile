@@ -207,6 +207,7 @@ RUN pip install --break-system-packages \
       git+https://github.com/aristanetworks/j2lint.git@341b5d5db86 \
       pyhumps==3.8.0; \
     apt-get update && apt-get install -y \
+      build-essential \
       dh-python \
       fakeroot \
       iproute2 \
