@@ -35,5 +35,7 @@ packages = [
     "lua5.3",
     "doxygen",
     "bison",
-    "liblua5.3-dev"
+    "liblua5.3-dev",
+    "flex",
+    "libelf-dev"
 ]
