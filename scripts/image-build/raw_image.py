@@ -232,19 +232,34 @@ def create_raw_image(build_config, iso_file, work_dir):
         disk_details = parttable_create(con.loop_device, (int(build_config["disk_size"]) - 1) * 1024 * 1024)
 
         # Map partitions using kpartx
+        print("I: Mapping partitions using kpartx...")
         cmd(f"kpartx -av {con.loop_device}")
         cmd("udevadm settle")
 
-        # Resolve mapper names (example: /dev/mapper/loop0p2)
+        cmd("ls -l /dev/mapper")  # debug output
+
+        # Detect mapped partitions
         from glob import glob
+        import time
+
         mapper_base = os.path.basename(con.loop_device).replace("/dev/", "")
         mapped_parts = sorted(glob(f"/dev/mapper/{mapper_base}p*"))
 
-        if len(mapped_parts) < 3:
-            raise RuntimeError("E: Expected at least 3 partitions created by kpartx")
+        if not mapped_parts:
+            raise RuntimeError(f"E: No partitions were found in /dev/mapper for {mapper_base}")
 
-        disk_details.partition['efi'] = mapped_parts[1]
-        disk_details.partition['root'] = mapped_parts[2]
+        print(f"I: Found mapped partitions: {mapped_parts}")
+
+        if len(mapped_parts) == 2:
+            # Assume [0] = EFI, [1] = root
+            disk_details.partition['efi'] = mapped_parts[0]
+            disk_details.partition['root'] = mapped_parts[1]
+        elif len(mapped_parts) >= 3:
+            # Common layout: [1] = EFI, [2] = root (skip 0 if it's BIOS boot)
+            disk_details.partition['efi'] = mapped_parts[1]
+            disk_details.partition['root'] = mapped_parts[2]
+        else:
+            raise RuntimeError(f"E: Unexpected partition layout: {mapped_parts}")
 
         con.disk_details = disk_details
         mount_image(con)
