@@ -65,7 +65,7 @@ def clone_or_update_repo(repo_dir: Path, scm_url: str, commit_id: str) -> None:
             run(['git', 'clone', scm_url, str(repo_dir)], check=True)
             run(['git', 'checkout', commit_id], cwd=repo_dir, check=True)
         except CalledProcessError as e:
-            print(f"❌ Failed to clone or checkout: {e}")
+            print(f"Failed to clone or checkout: {e}")
             sys.exit(1)
 
 
