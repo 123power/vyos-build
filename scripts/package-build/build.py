@@ -93,7 +93,7 @@ def build_package(package: list, patch_dir: Path) -> None:
         # Check out the specific commit
         run(['git', 'checkout', package['commit_id']], cwd=repo_dir, check=True)
     except CalledProcessError as e:
-        print(f"❌ Failed to clone or checkout for package '{repo_name}': {e}")
+        print(f"Failed to clone or checkout for package '{repo_name}': {e}")
         sys.exit(1)
 
     try:
