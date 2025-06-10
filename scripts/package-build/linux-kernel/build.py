@@ -18,6 +18,7 @@
 import datetime
 import glob
 import shutil
+import sys
 import toml
 import os
 import subprocess
@@ -60,8 +61,12 @@ def clone_or_update_repo(repo_dir: Path, scm_url: str, commit_id: str) -> None:
         run(['git', 'checkout', commit_id], cwd=repo_dir, check=True)
         #run(['git', 'pull'], cwd=repo_dir, check=True)
     else:
-        run(['git', 'clone', scm_url, str(repo_dir)], check=True)
-        run(['git', 'checkout', commit_id], cwd=repo_dir, check=True)
+        try:
+            run(['git', 'clone', scm_url, str(repo_dir)], check=True)
+            run(['git', 'checkout', commit_id], cwd=repo_dir, check=True)
+        except CalledProcessError as e:
+            print(f"Failed to clone or checkout: {e}")
+            sys.exit(1)
 
 
 def create_tarball(package_name, source_dir=None):
