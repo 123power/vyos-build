@@ -236,7 +236,6 @@ def create_raw_image(build_config, iso_file, work_dir):
         cmd(f"kpartx -av {con.loop_device}")
         cmd("udevadm settle")
 
-        cmd("ls -l /dev/mapper")  # debug output
 
         # Detect mapped partitions
         from glob import glob
