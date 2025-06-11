@@ -268,6 +268,7 @@ if __name__ == '__main__':
     arg_parser = ArgumentParser()
     arg_parser.add_argument('--config', default='package.toml', help='Path to the package configuration file')
     arg_parser.add_argument('--packages', nargs='+', help='Names of packages to build (default: all)', default=[])
+    arg_parser.add_argument('--install-dependencies', '-i', help='Only install build dependencies', action='store_true')
     args = arg_parser.parse_args()
 
     # Load package configuration
@@ -282,6 +283,8 @@ if __name__ == '__main__':
     global_dependencies = config.get('dependencies', {}).get('packages', [])
     if global_dependencies:
         ensure_dependencies(global_dependencies)
+        if args.install_dependencies:
+            exit(0)
 
     packages = config['packages']
 
