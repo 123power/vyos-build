@@ -540,7 +540,7 @@ try:
     # Start/stop config daemon
     #################################################
     if args.configd:
-        c.sendline('sudo systemctl start vyos-configd.service &> /dev/null')
+        c.sendline('sudo systemctl restart vyos-configd.service &> /dev/null')
     else:
         c.sendline('sudo systemctl stop vyos-configd.service &> /dev/null')
     c.expect(op_mode_prompt)
