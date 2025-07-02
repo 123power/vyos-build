@@ -101,6 +101,8 @@ parser.add_argument('--vyconf', help='Execute testsuite with vyconfd', action='s
                     default=False)
 parser.add_argument('--no-vpp', help='Execute testsuite without VPP tests',
                 action='store_true', default=False)
+parser.add_argument('--huge-page-size', help='Huge page size (e.g., 2M, 1G)', type=str)
+parser.add_argument('--huge-page-count', help='Number of huge pages to allocate', type=int)
 
 args = parser.parse_args()
 
@@ -413,6 +415,22 @@ try:
         exit(1)
 
     #################################################
+    # Configure boot options if required
+    #################################################
+    if args.huge_page_size and args.huge_page_count:
+        c.sendline('configure')
+        c.expect(cfg_mode_prompt)
+        c.sendline(f'set system option kernel memory hugepage-size {args.huge_page_size} hugepage-count {args.huge_page_count}')
+        c.expect(cfg_mode_prompt)
+        c.sendline('set system option kernel disable-mitigations')
+        c.expect(cfg_mode_prompt)
+        c.sendline('commit')
+        c.expect(cfg_mode_prompt)
+        c.sendline('save')
+        c.expect(cfg_mode_prompt)
+        c.sendline('exit')
+        c.expect(op_mode_prompt)
+    #################################################
     # Installing into VyOS system
     #################################################
     log.info('Starting installer')
@@ -528,6 +546,14 @@ try:
 
     loginVM(c, log)
 
+    #################################################
+    # Boot options require a reboot
+    #################################################
+    if args.huge_page_size and args.huge_page_count:
+        log.info('Rebooting to apply kernel boot options')
+        c.sendline('reboot now')
+        loginVM(c, log)
+
     ################################################
     # Always load the WiFi simulation module
     ################################################
@@ -571,6 +597,12 @@ try:
     c.sendline('show system cpu')
     c.expect(op_mode_prompt)
     c.sendline('show system memory')
+    c.expect(op_mode_prompt)
+    c.sendline('show system memory detail | no-more')
+    c.expect(op_mode_prompt)
+    c.sendline('show configuration commands | match kernel')
+    c.expect(op_mode_prompt)
+    c.sendline('cat /proc/cmdline')
     c.expect(op_mode_prompt)
     c.sendline('show version all | grep -e "vpp" -e "vyos-1x"')
     c.expect(op_mode_prompt)
