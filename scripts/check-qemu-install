@@ -99,6 +99,8 @@ parser.add_argument('--cpu', help='Set QEMU CPU', type=int, default=2)
 parser.add_argument('--memory', help='Set QEMU memory', type=int, default=4)
 parser.add_argument('--vyconf', help='Execute testsuite with vyconfd', action='store_true',
                     default=False)
+parser.add_argument('--no-vpp', help='Execute testsuite without VPP tests',
+                action='store_true', default=False)
 
 args = parser.parse_args()
 
@@ -806,6 +808,10 @@ try:
             # remove interface tests as they consume a lot of time
             c.sendline('sudo rm -f /usr/libexec/vyos/tests/smoke/cli/test_interfaces_*')
             c.expect(op_mode_prompt)
+        if args.no_vpp:
+            # remove VPP tests
+            c.sendline('sudo rm -f /usr/libexec/vyos/tests/smoke/cli/test_vpp*')
+            c.expect(op_mode_prompt)
 
         if args.vyconf:
             c.sendline('sudo /usr/libexec/vyos/set_vyconf_backend.py --no-prompt &> /dev/null')
@@ -837,6 +843,14 @@ try:
 
     # else, run configtest suite
     elif args.configtest:
+        if args.match:
+            # Remove config-tests that we don't want to run
+            match_str = '-o '.join([f'-name "{name}"' for name in args.match.split("|")])
+            c.sendline(f'sudo find /usr/libexec/vyos/tests/config -mindepth 1 -maxdepth 1 ! \( {match_str} \) -exec rm -rf {{}} +')
+            c.expect(op_mode_prompt)
+            c.sendline(f'sudo find /usr/libexec/vyos/tests/config-tests -mindepth 1 -maxdepth 1 ! \( {match_str} \) -exec rm -rf {{}} +')
+            c.expect(op_mode_prompt)
+
         log.info('Adding a legacy WireGuard default keypair for migrations')
         c.sendline('sudo mkdir -p /config/auth/wireguard/default')
         c.expect(op_mode_prompt)
