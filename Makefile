@@ -46,7 +46,7 @@ test-vpp: checkiso
 .PHONY: testc
 .ONESHELL:
 testc: checkiso
-	scripts/check-qemu-install --debug --configd --cpu 2 --memory 7 --configtest build/live-image-amd64.hybrid.iso $(filter-out $@,$(MAKECMDGOALS))
+	scripts/check-qemu-install --debug --configd --match="!vpp" --cpu 2 --memory 7 --configtest build/live-image-amd64.hybrid.iso $(filter-out $@,$(MAKECMDGOALS))
 
 .PHONY: testcvpp
 .ONESHELL:
