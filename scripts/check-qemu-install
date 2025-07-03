@@ -875,12 +875,24 @@ try:
 
     # else, run configtest suite
     elif args.configtest:
+        # Remove config-tests that we don't want to run
         if args.match:
-            # Remove config-tests that we don't want to run
-            match_str = '-o '.join([f'-name "{name}"' for name in args.match.split("|")])
-            c.sendline(f'sudo find /usr/libexec/vyos/tests/config -mindepth 1 -maxdepth 1 ! \( {match_str} \) -exec rm -rf {{}} +')
+            if args.match.startswith("!"):
+                # Exclude mode — delete only the matched names
+                names = args.match[1:].split("|")
+                match_str = '-o '.join([f'-name "{name}"' for name in names])
+                cleanup_config_dir_cmd = f'sudo find /usr/libexec/vyos/tests/config -mindepth 1 -maxdepth 1 \\( {match_str} \\) -exec rm -rf {{}} +'
+                cleanup_config_tests_dir_cmd = f'sudo find /usr/libexec/vyos/tests/config-tests -mindepth 1 -maxdepth 1 \\( {match_str} \\) -exec rm -rf {{}} +'
+            else:
+                # Include mode — keep only the matched names, delete the rest
+                names = args.match.split("|")
+                match_str = '-o '.join([f'-name "{name}"' for name in names])
+                cleanup_config_dir_cmd = f'sudo find /usr/libexec/vyos/tests/config -mindepth 1 -maxdepth 1 ! \\( {match_str} \\) -exec rm -rf {{}} +'
+                cleanup_config_tests_dir_cmd = f'sudo find /usr/libexec/vyos/tests/config-tests -mindepth 1 -maxdepth 1 ! \\( {match_str} \\) -exec rm -rf {{}} +'
+
+            c.sendline(cleanup_config_dir_cmd)
             c.expect(op_mode_prompt)
-            c.sendline(f'sudo find /usr/libexec/vyos/tests/config-tests -mindepth 1 -maxdepth 1 ! \( {match_str} \) -exec rm -rf {{}} +')
+            c.sendline(cleanup_config_tests_dir_cmd)
             c.expect(op_mode_prompt)
 
         log.info('Adding a legacy WireGuard default keypair for migrations')
