@@ -334,6 +334,9 @@ RUN rm -rf /tmp/*
 # Remove cleanup script so that in-container apt-get install uses cache
 RUN rm /etc/apt/apt.conf.d/clean
 
+# Add cache once as it is needed by some builds in GitHub Actions
+RUN apt-get update
+
 # Disable mouse in vim
 RUN printf "set mouse=\nset ttymouse=\n" > /etc/vim/vimrc.local
 
