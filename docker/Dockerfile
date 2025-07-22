@@ -248,6 +248,8 @@ RUN pip --no-cache --no-cache-dir install --break-system-packages \
       python3-certbot-nginx \
       python3-pam \
       python3-dbus \
+      python3-pyroute2 \
+      python3-voluptuous \
       pylint \
       quilt \
       whois \
