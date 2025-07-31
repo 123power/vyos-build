@@ -813,7 +813,7 @@ try:
         except pexpect.TIMEOUT:
             log.warning('Did not find GRUB countdown window, ignoring')
 
-        c.expect('.*Encrypted config volume has not been mounted', timeout=120)
+        c.expect('.*encrypted config volume will not be automatically mounted', timeout=120)
 
         loginVM(c, log)
 
