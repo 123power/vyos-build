@@ -24,7 +24,7 @@ build_cmd = "build_accel_ppp"
 
 [[packages]]
 name = "accel-ppp-ng"
-commit_id = "5bcc6dd"
+commit_id = "e14d23e"
 scm_url = "https://github.com/accel-ppp/accel-ppp-ng.git"
 build_cmd = "build_accel_ppp_ng"
 
