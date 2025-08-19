@@ -95,11 +95,21 @@ def create_tarball(package_name, source_dir=None):
     if not os.path.isdir(source_dir):
         raise FileNotFoundError(f"Directory '{source_dir}' does not exist.")
 
+    base_dir = os.path.dirname(source_dir) or '.'
+    dir_name = os.path.basename(source_dir)
+
     # Create the tarball
     try:
-        shutil.make_archive(base_name=output_tarball.replace('.tar.gz', ''), format='gztar', root_dir=source_dir)
+        subprocess.run([
+            'tar',
+            f'--exclude={dir_name}/.git',
+            f'--exclude={dir_name}/.github',
+            '-czf', output_tarball,
+            '-C', base_dir,
+            dir_name
+        ], check=True)
         print(f"I: Tarball created: {output_tarball}")
-    except Exception as e:
+    except subprocess.CalledProcessError as e:
         print(f"I: Failed to create tarball for {package_name}: {e}")
 
 
