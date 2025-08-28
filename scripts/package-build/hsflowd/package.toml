@@ -5,4 +5,4 @@ scm_url = "https://github.com/sflow/host-sflow.git"
 build_cmd = "make deb FEATURES='PCAP DROPMON DBUS PSAMPLE VPP'"
 
 [dependencies]
-packages = ["libpcap0.8-dev"]
+packages = ["libpcap0.8-dev", "clang"]
