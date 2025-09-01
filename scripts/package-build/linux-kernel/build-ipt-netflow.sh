@@ -37,7 +37,7 @@ DEBIAN_DIR="tmp/"
 DEBIAN_CONTROL="${DEBIAN_DIR}/DEBIAN/control"
 DEBIAN_POSTINST="${CWD}/vyos-ipt-netflow.postinst"
 
-./configure --enable-macaddress --enable-vlan --enable-sampler --enable-aggregation --kdir=${KERNEL_DIR}
+./configure --enable-direction --enable-macaddress --enable-vlan --enable-sampler --enable-aggregation --kdir=${KERNEL_DIR}
 make all
 
 if [ "x$?" != "x0" ]; then
