@@ -3,6 +3,7 @@ packages = [
   "grub-efi-arm64",
 ]
 bootloaders = "grub-efi"
+squashfs_compression_type = "xz -b 256k -always-use-fragments -no-recovery"
 
 [additional_repositories.salt]
   architecture = "arm64"
