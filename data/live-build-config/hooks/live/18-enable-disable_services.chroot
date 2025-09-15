@@ -10,7 +10,6 @@ systemctl disable kea-dhcp4-server.service
 systemctl disable kea-dhcp6-server.service
 systemctl disable isc-dhcp-relay.service
 systemctl disable nfacctd.service
-systemctl disable pmacctd.service
 systemctl disable sfacctd.service
 systemctl disable uacctd.service
 systemctl disable ssh.service
