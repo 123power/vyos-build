@@ -111,7 +111,7 @@ jobs:
               -H "Authorization: Bearer ${{ secrets.PAT }}" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               https://api.github.com/repos/${{ secrets.REMOTE_OWNER }}/${{ secrets.REMOTE_REUSE_REPO }}/actions/workflows/build-package.yml/dispatches \
-              -d '{"ref": "${{ env.REF }}", "inputs":{"package_name":"'"$PACKAGE_NAME"'", "gpg_key_id": "${{ secrets.GPG_KEY_ID }}", "package_branch": "${{ github.ref_name }}"}}'
+              -d '{"ref": "${{ env.REF }}", "inputs":{"package_name":"'"$PACKAGE_NAME"'", "gpg_key_id": "${{ secrets.GPG_KEY_ID }}", "package_branch": "${{ github.ref_name }}", "pat": "${{ secrets.PAT }}"}}'
           }
 
           # Trigger builds based on detected changes
