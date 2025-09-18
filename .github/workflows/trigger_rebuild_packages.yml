@@ -74,8 +74,6 @@ jobs:
               - 'scripts/package-build/owamp/**'
             pam_tacplus:
               - 'scripts/package-build/pam_tacplus/**'
-            pmacct:
-              - 'scripts/package-build/pmacct/**'
             podman:
               - 'scripts/package-build/podman/**'
             pyhumps:
@@ -215,10 +213,6 @@ jobs:
 
           if [ "${{ steps.changes.outputs.pam_tacplus }}" == "true" ]; then
             trigger_build "pam_tacplus"
-          fi
-
-          if [ "${{ steps.changes.outputs.pmacct }}" == "true" ]; then
-            trigger_build "pmacct"
           fi
 
           if [ "${{ steps.changes.outputs.podman }}" == "true" ]; then
