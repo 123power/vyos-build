@@ -139,9 +139,6 @@ def build_package(package: dict, dependencies: list) -> None:
         elif package['build_cmd'] == 'build_linux_firmware':
             build_linux_firmware(package['commit_id'], package['scm_url'])
             create_tarball(f'{package["name"]}-{package["commit_id"]}', f'{package["name"]}')
-        elif package['build_cmd'] == 'build_accel_ppp':
-            build_accel_ppp(package['commit_id'], package['scm_url'])
-            create_tarball(f'{package["name"]}-{package["commit_id"]}', f'{package["name"]}')
         elif package['build_cmd'] == 'build_accel_ppp_ng':
             build_accel_ppp_ng(package['commit_id'], package['scm_url'])
             create_tarball(f'{package["name"]}-{package["commit_id"]}', f'{package["name"]}')
@@ -210,13 +207,6 @@ def build_linux_firmware(commit_id, scm_url):
     repo_dir = Path('linux-firmware')
     clone_or_update_repo(repo_dir, scm_url, commit_id)
     run(['./build-linux-firmware.sh'], check=True)
-
-
-def build_accel_ppp(commit_id, scm_url):
-    """Build accel-ppp"""
-    repo_dir = Path('accel-ppp')
-    clone_or_update_repo(repo_dir, scm_url, commit_id)
-    run(['./build-accel-ppp.sh'], check=True)
 
 
 def build_accel_ppp_ng(commit_id, scm_url):
