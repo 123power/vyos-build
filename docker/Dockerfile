@@ -279,6 +279,7 @@ RUN if dpkg-architecture -ii386 || dpkg-architecture -iamd64; then \
 # Packages for arm64 platform
 RUN if dpkg-architecture -iarm64; then \
       apt-get update && apt-get install -y \
+        python3-pexpect \
         ipxe-qemu \
         qemu-system-aarch64 \
         qemu-efi-aarch64; \
