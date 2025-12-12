@@ -921,11 +921,11 @@ try:
             c.expect(op_mode_prompt)
         if args.no_interfaces:
             # remove interface tests as they consume a lot of time
-            c.sendline('sudo rm -f {smoketests_path}/cli/test_interfaces_*')
+            c.sendline(f'sudo rm -f {smoketests_path}/cli/test_interfaces_*')
             c.expect(op_mode_prompt)
         if args.no_vpp:
             # remove VPP tests
-            c.sendline('sudo rm -f {smoketests_path}/cli/test_vpp*')
+            c.sendline(f'sudo rm -f {smoketests_path}/cli/test_vpp*')
             c.expect(op_mode_prompt)
 
         if args.vyconf:
