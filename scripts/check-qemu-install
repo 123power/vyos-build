@@ -32,7 +32,6 @@
 #    [--silent]     only print on errors
 #    [--debug]      print all communication with the device
 
-import pexpect
 import sys
 import os
 import time
@@ -42,12 +41,14 @@ import random
 import traceback
 import logging
 import re
-import tomli
 import shutil
 import json
 
 from io import BytesIO
 from datetime import datetime
+
+import tomli
+import pexpect
 
 EXCEPTION = 0
 now = datetime.now()
@@ -310,10 +311,10 @@ def start_swtpm():
         os.mkdir(tpm_folder)
 
     def swtpm_thread():
-        c = subprocess.check_output([
-                'swtpm', 'socket', '--tpmstate', f'dir={tpm_folder}',
-                '--ctrl', f'type=unixio,path={tpm_folder}/swtpm-sock', '--tpm2', '--log', 'level=1'
-            ])
+        subprocess.check_output([
+            'swtpm', 'socket', '--tpmstate', f'dir={tpm_folder}',
+            '--ctrl', f'type=unixio,path={tpm_folder}/swtpm-sock', '--tpm2', '--log', 'level=1'
+        ])
 
     from multiprocessing import Process
     tpm_process = Process(target=swtpm_thread)
@@ -940,9 +941,9 @@ try:
 
         if i == 0:
             raise Exception('Invalid command detected')
-        elif i == 1:
+        if i == 1:
             raise Exception('Set syntax failed :/')
-        elif i == 2:
+        if i == 2:
             tmp = '(W)hy (T)he (F)ace? VyOS smoketest not found!'
             log.error(tmp)
             raise Exception(tmp)
@@ -989,7 +990,7 @@ try:
         c.expect(op_mode_prompt)
 
         log.info('Generating PKI objects')
-        c.sendline(f'/usr/bin/vyos-configtest-pki')
+        c.sendline('/usr/bin/vyos-configtest-pki')
         c.expect(op_mode_prompt, timeout=900)
 
         script_file = '/config/scripts/vyos-foo-update.script'
