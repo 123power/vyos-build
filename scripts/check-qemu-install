@@ -58,6 +58,7 @@ qemu_name = 'VyOS-QEMU'
 # getch.py
 KEY_F2 = chr(27) + chr(91) + chr(49) + chr(50) + chr(126)
 KEY_F10 = chr(27) + chr(91) + chr(50) + chr(49) + chr(126)
+KEY_UP = chr(27) + chr(91) + chr(65)
 KEY_DOWN = chr(27) + chr(91) + chr(66)
 KEY_SPACE = chr(32)
 KEY_RETURN = chr(13)
@@ -361,6 +362,81 @@ def toggleUEFISecureBoot(c):
     UEFIKeyPress(c, KEY_DOWN)
     UEFIKeyPress(c, KEY_RETURN)
 
+def BOOTLOADERchooseSerialConsole(c, live: bool) -> None:
+    """ Select GRUB boot entry that uses the serial console. This differs
+        between a LIVE ISO image and an already installed system. """
+    BOOTLOADER_TMO = 20
+    BOOTLOADER_SLEEP = 0.5
+    BOOTLOADER_LOAD_TMO = 5 # let GRUB screen load
+
+    UEFI_STRING = r'BdsDxe.*'
+    GRUB_STRING = r'GNU GRUB.*'
+    ISOLINUX_STRING = r'ISOLINUX.*'
+
+    # XXX: UEFI systems directly load GRUB, BIOS systems fallback to ISOLINUX
+    if live and args.uefi:
+        # Let UEFI start before GRUB
+        c.expect(UEFI_STRING, timeout=BOOTLOADER_TMO)
+        # Wait for GRUB
+        c.expect(GRUB_STRING, timeout=BOOTLOADER_TMO)
+        time.sleep(BOOTLOADER_LOAD_TMO)
+
+        # Select GRUB serial console
+        # Key DOWN -> fail-safe mode
+        c.send(KEY_DOWN)
+        time.sleep(BOOTLOADER_SLEEP)
+        # Key DOWN -> Serial Console boot
+        c.send(KEY_DOWN)
+        time.sleep(BOOTLOADER_SLEEP)
+        # Boot
+        c.send(KEY_RETURN)
+    elif live and not args.uefi:
+        # Wait for ISOLINUX
+        c.expect(ISOLINUX_STRING, timeout=BOOTLOADER_TMO)
+        time.sleep(BOOTLOADER_LOAD_TMO)
+
+        # Key UP - always start from top menu entry, selection does not wrap
+        c.send(KEY_UP)
+        time.sleep(BOOTLOADER_SLEEP)
+        c.send(KEY_UP)
+        time.sleep(BOOTLOADER_SLEEP)
+        c.send(KEY_UP)
+        time.sleep(BOOTLOADER_SLEEP)
+        # Select Serial console - second option
+        c.send(KEY_DOWN)
+        time.sleep(BOOTLOADER_SLEEP)
+        # Boot
+        c.send(KEY_RETURN)
+    else:
+        # Let UEFI start before GRUB
+        if args.uefi:
+            c.expect(UEFI_STRING, timeout=BOOTLOADER_TMO)
+
+        # Wait for GRUB
+        c.expect(GRUB_STRING, timeout=BOOTLOADER_TMO)
+        time.sleep(BOOTLOADER_LOAD_TMO)
+
+        # Select GRUB serial console
+        # Boot options
+        c.send(KEY_DOWN)
+        time.sleep(BOOTLOADER_SLEEP)
+        c.send(KEY_RETURN)
+        time.sleep(BOOTLOADER_SLEEP)
+        # Select console type
+        c.send(KEY_DOWN)
+        time.sleep(BOOTLOADER_SLEEP)
+        c.send(KEY_RETURN)
+        time.sleep(BOOTLOADER_SLEEP)
+        # *ttyS (serial)
+        c.send(KEY_DOWN)
+        time.sleep(BOOTLOADER_SLEEP)
+        c.send(KEY_RETURN)
+        time.sleep(BOOTLOADER_SLEEP)
+        # Boot
+        c.send(KEY_RETURN)
+
+    return None
+
 def basic_cli_tests(c):
     # Repeating / shared basic CLI test between installed images and the
     # cloud-init test-case
@@ -425,14 +501,7 @@ try:
         log.info('Disable UEFI Secure Boot for initial installation')
         toggleUEFISecureBoot(c)
 
-    try:
-        c.expect('Welcome to GRUB', timeout=10)
-        c.send(KEY_DOWN)
-        c.send(KEY_DOWN)
-        c.send(KEY_RETURN)
-    except pexpect.TIMEOUT:
-        log.warning('Did not find GRUB countdown window, ignoring')
-
+    BOOTLOADERchooseSerialConsole(c, live=(not args.cloud_init))
     loginVM(c, log)
 
     #################################################
@@ -566,6 +635,7 @@ try:
     # Booting installed system
     #################################################
     log.info('Booting installed system')
+    BOOTLOADERchooseSerialConsole(c, live=False)
 
     #################################################
     # Logging into VyOS system
