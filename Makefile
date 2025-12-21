@@ -68,10 +68,20 @@ testsb: checkiso
 testtpm: checkiso
 	scripts/check-qemu-install --debug --tpmtest build/live-image-amd64.hybrid.iso $(filter-out $@,$(MAKECMDGOALS))
 
+.PHONY: test-ci-qcow2
+.ONESHELL:
+test-ci-qcow2:
+	if [ ! -f build/*.qcow2 ]; then
+		echo "Could not find any QCOW2 disk image"
+		exit 1
+	fi
+	rm -f cloud-init-image-amd64.qcow2 ; cp $$(ls -t build/*.qcow2 | head -n 1) cloud-init-image-amd64.qcow2
+	scripts/check-qemu-install --debug --cloud-init --disk cloud-init-image-amd64.qcow2 $(filter-out $@,$(MAKECMDGOALS))
+
 .PHONY: qemu-live
 .ONESHELL:
 qemu-live: checkiso
-	scripts/check-qemu-install --qemu-cmd --uefi build/live-image-amd64.hybrid.iso $(filter-out $@,$(MAKECMDGOALS))
+	scripts/check-qemu-install --qemu-cmd --iso build/live-image-amd64.hybrid.iso $(filter-out $@,$(MAKECMDGOALS))
 
 .PHONY: oci
 .ONESHELL:
@@ -101,4 +111,4 @@ clean:
 
 .PHONY: purge
 purge:
-	rm -rf build packer_build packer_cache testinstall-*.img
+	rm -rf build packer_build packer_cache testinstall-*.raw ci_data ci_seed.iso

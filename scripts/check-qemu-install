@@ -52,9 +52,23 @@ import pexpect
 
 EXCEPTION = 0
 DISK_IMAGE_EXTENSION = '.raw'
+CI_CONFIG_ARGS = {
+    'hostname': 'vyos-CLOUD-INIT',
+    'eth0_ipv4': '192.0.2.1/25',
+    'eth0_ipv6': '2001:db8::1/64',
+    'default_nexthop' : '192.0.2.126',
+    'default_nexthop6' : '2001:db8::ffff',
+    }
 
 tpm_folder = '/tmp/vyos_tpm_test'
 qemu_name = 'VyOS-QEMU'
+
+test_timeout = 5 *3600 # 5 hours (in seconds) to complete individual testcases
+
+op_mode_prompt = r'vyos@vyos:~\$'
+cfg_mode_prompt = r'vyos@vyos#'
+default_user = 'vyos'
+default_password = 'vyos'
 
 # getch.py
 KEY_F2 = chr(27) + chr(91) + chr(49) + chr(50) + chr(126)
@@ -94,6 +108,8 @@ parser.add_argument('--tpmtest', help='Execute TPM encrypted config tests',
                 action='store_true', default=False)
 parser.add_argument('--sbtest', help='Execute Secure Boot tests',
                 action='store_true', default=False)
+parser.add_argument('--cloud-init', help='Execute cloud-init tests',
+                action='store_true', default=False)
 parser.add_argument('--qemu-cmd', help='Only generate QEMU launch command',
                 action='store_true', default=False)
 parser.add_argument('--cpu', help='Set QEMU CPU', type=int, default=2)
@@ -106,6 +122,11 @@ parser.add_argument('--huge-page-size', help='Huge page size (e.g., 2M, 1G)', ty
 parser.add_argument('--huge-page-count', help='Number of huge pages to allocate', type=int)
 
 args = parser.parse_args()
+
+if args.cloud_init:
+    hostname = CI_CONFIG_ARGS['hostname']
+    op_mode_prompt = rf'vyos@{hostname}:~\$'
+    cfg_mode_prompt = rf'vyos@{hostname}#'
 
 # This is what we requested the build to contain
 with open('data/defaults.toml', 'rb') as f:
@@ -141,6 +162,8 @@ class StreamToLogger(object):
     def flush(self):
         pass
 
+class EarlyExit(Exception):
+    pass
 
 def get_qemu_cmd(name, enable_uefi, disk_img, raid=None, iso_img=None, tpm=False, vnc_enabled=False, secure_boot=False):
     uefi = ""
@@ -407,17 +430,13 @@ def BOOTLOADERchooseSerialConsole(c, live: bool) -> None:
         c.expect(ISOLINUX_STRING, timeout=BOOTLOADER_TMO)
         time.sleep(BOOTLOADER_LOAD_TMO)
 
-        # Key UP - always start from top menu entry, selection does not wrap
-        c.send(KEY_UP)
-        time.sleep(BOOTLOADER_SLEEP)
-        c.send(KEY_UP)
-        time.sleep(BOOTLOADER_SLEEP)
-        c.send(KEY_UP)
-        time.sleep(BOOTLOADER_SLEEP)
-        # Select Serial console - second option
+        # Boot Menu starts at Live system (vyos) - KVM console
         c.send(KEY_DOWN)
         time.sleep(BOOTLOADER_SLEEP)
-        # Boot
+        # Live system (vyos fail-safe mode)
+        c.send(KEY_DOWN)
+        time.sleep(BOOTLOADER_SLEEP)
+        # Live system (vyos) - Serial console - boot it up
         c.send(KEY_RETURN)
     else:
         # Let UEFI start before GRUB
@@ -486,7 +505,49 @@ if args.qemu_cmd:
     os.system(tmp)
     exit(0)
 
-test_timeout = 5 *3600 # 3 hours (in seconds)
+if args.cloud_init:
+    # Build cloud-init seed iso
+    CI_ISO = 'ci_seed.iso'
+    CI_DATA_DIR = 'ci_data'
+    # Insert cloud-init ISO into CD-ROM
+    args.iso = CI_ISO
+
+    if not os.path.exists(CI_DATA_DIR):
+        os.makedirs(CI_DATA_DIR)
+
+    # create "empty" meta-data file
+    open(f'{CI_DATA_DIR}/meta-data', mode='w').close()
+
+    network_config = """version: 2
+ethernets:
+  eth0:
+    dhcp4: false
+    dhcp6: false
+"""
+
+    user_data = """#cloud-config
+vyos_config_commands:
+  - set system host-name '{hostname}'
+  - set service ntp server 1.pool.ntp.org
+  - set service ntp server 2.pool.ntp.org
+  - delete interfaces ethernet eth0 address 'dhcp'
+  - set interfaces ethernet eth0 address '{eth0_ipv4}'
+  - set interfaces ethernet eth0 address '{eth0_ipv6}'
+  - set protocols static route 0.0.0.0/0 next-hop '{default_nexthop}'
+  - set protocols static route6 ::/0 next-hop '{default_nexthop6}'
+""".format(**CI_CONFIG_ARGS)
+
+    with open(f'{CI_DATA_DIR}/network-config', mode='w') as f:
+        f.writelines(network_config)
+
+    with open(f'{CI_DATA_DIR}/user-data', mode='w') as f:
+        f.writelines(user_data)
+
+    # Assemble cloud-init ISO file
+    if os.path.exists(CI_ISO):
+        os.unlink(CI_ISO)
+    os.system(f'mkisofs -joliet -rock -volid "cidata" -output {CI_ISO} {CI_DATA_DIR}')
+
 tpm_process = None
 try:
     # Start TPM emulator
@@ -504,17 +565,41 @@ try:
     #################################################
     # Logging into VyOS system
     #################################################
-    op_mode_prompt = r'vyos@vyos:~\$'
-    cfg_mode_prompt = r'vyos@vyos#'
-    default_user = 'vyos'
-    default_password = 'vyos'
-
     if args.sbtest:
         log.info('Disable UEFI Secure Boot for initial installation')
         toggleUEFISecureBoot(c)
 
     BOOTLOADERchooseSerialConsole(c, live=(not args.cloud_init))
     loginVM(c, log)
+
+    #################################################
+    # Cloud-Init comes with a pre-assembled ISO - just boot and test it
+    #################################################
+    if args.cloud_init:
+        log.info('Perform basic CLI configuration mode tests from cloud-init...')
+        basic_cli_tests(c)
+
+        # Valida assigned IPv4 and IPv6 addresses
+        c.sendline('ip --json addr show dev eth0 | jq -r \'.[0].addr_info[] | select(.family=="inet") | "\(.local)/\(.prefixlen)"\'')
+        c.expect(CI_CONFIG_ARGS['eth0_ipv4'])
+        c.expect(op_mode_prompt)
+
+        c.sendline('ip --json addr show dev eth0 | jq -r \'.[0].addr_info[] | select(.family=="inet6" and .scope=="global" and (.temporary|not)) | "\(.local)/\(.prefixlen)"\'')
+        c.expect(CI_CONFIG_ARGS['eth0_ipv6'])
+        c.expect(op_mode_prompt)
+
+        # Valida default route nexthops
+        c.sendline('ip -4 --json route show default | jq -r ".[0].gateway"')
+        c.expect(CI_CONFIG_ARGS['default_nexthop'])
+        c.expect(op_mode_prompt)
+
+        c.sendline('ip -6 --json route show default | jq -r ".[0].gateway"')
+        c.expect(CI_CONFIG_ARGS['default_nexthop6'])
+        c.expect(op_mode_prompt)
+
+        shutdownVM(c, log, 'Powering off system')
+        c.close()
+        raise EarlyExit
 
     #################################################
     # Check for no private key contents within the image
@@ -1112,6 +1197,9 @@ try:
 
     shutdownVM(c, log, 'Powering off system')
     c.close()
+
+except EarlyExit:
+    pass
 
 except pexpect.exceptions.TIMEOUT:
     log.error('Timeout waiting for VyOS system')
