@@ -1,0 +1,22 @@
+name: Build-VyOS-Sagitta-LTS
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: sagitta # To jest kluczowe - budujemy kod z sagitty
+
+      - name: Build ISO
+        run: |
+          sudo rm -rf config/ build/ .build/
+          docker run --rm --privileged -v $(pwd):/vyos -w /vyos vyos/vyos-build:sagitta \
+          sudo ./build-vyos-image iso --architecture amd64 --build-by "Marcin-PRO" --build-type release
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VyOS-ISO-Package
+          path: build/*.iso
