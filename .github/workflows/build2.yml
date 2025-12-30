@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-sagitta:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04   # ⬅️ KLUCZOWA ZMIANA
 
     env:
       DEBIAN_FRONTEND: noninteractive
@@ -43,7 +43,7 @@ jobs:
       # ------------------------------------------------------------
       # 4. Zależności systemowe + Python (KOMPLET)
       # ------------------------------------------------------------
-      - name: Install build dependencies (system + python)
+      - name: Install build dependencies
         run: |
           sudo apt-get update -y
           sudo apt-get install -y --no-install-recommends \
@@ -76,7 +76,7 @@ jobs:
           cat /etc/resolv.conf
 
       # ------------------------------------------------------------
-      # 6. BUILD – jedyna poprawna metoda
+      # 6. BUILD – KANONICZNY ENTRYPOINT
       # ------------------------------------------------------------
       - name: Build VyOS Sagitta ISO
         run: |
