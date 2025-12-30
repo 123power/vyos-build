@@ -1,98 +1,78 @@
-name: VyOS 1.4 Sagitta – clean upstream build
+name: Build VyOS 1.4 Sagitta ISO (Clean)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-      - sagitta
 
 jobs:
   build-sagitta:
-    runs-on: ubuntu-24.04   # ⬅️ KLUCZOWA ZMIANA
-
-    env:
-      DEBIAN_FRONTEND: noninteractive
-      UPSTREAM_REPO: https://github.com/vyos/vyos-build.git
-      UPSTREAM_BRANCH: sagitta
-      BUILD_DIR: vyos-build
+    runs-on: ubuntu-latest
+    container:
+      image: debian:12
+      options: --privileged
 
     steps:
-      # ------------------------------------------------------------
-      # 1. Checkout (tylko po to, żeby workflow istniał)
-      # ------------------------------------------------------------
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # ------------------------------------------------------------
-      # 2. Pobranie CZYSTEGO upstream vyos-build
-      # ------------------------------------------------------------
-      - name: Clone upstream vyos-build (Sagitta)
+      - name: Install base dependencies
         run: |
-          git clone --depth 1 --branch "${UPSTREAM_BRANCH}" "${UPSTREAM_REPO}" "${BUILD_DIR}"
-          ls -la "${BUILD_DIR}"
-
-      # ------------------------------------------------------------
-      # 3. Submodules
-      # ------------------------------------------------------------
-      - name: Init submodules
-        run: |
-          cd "${BUILD_DIR}"
-          git submodule update --init --recursive || true
-
-      # ------------------------------------------------------------
-      # 4. Zależności systemowe + Python (KOMPLET)
-      # ------------------------------------------------------------
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y --no-install-recommends \
-            ca-certificates \
+          set -eux
+          apt-get update
+          apt-get install -y \
+            git \
             curl \
-            gnupg2 \
-            debootstrap \
-            live-build \
-            pbuilder \
-            qemu-utils \
-            wget \
-            xz-utils \
-            devscripts \
+            ca-certificates \
+            gnupg \
             python3 \
             python3-pip \
-            python3-venv \
-            python3-jinja2 \
-            python3-psutil \
-            python3-git \
             python3-tomli \
-            python3-pystache
+            python3-jinja2 \
+            python3-git \
+            python3-psutil \
+            python3-pystache \
+            devscripts \
+            live-build \
+            debootstrap \
+            squashfs-tools \
+            xorriso \
+            syslinux \
+            isolinux \
+            dosfstools \
+            grub-pc-bin \
+            grub-efi-amd64-bin
 
-      # ------------------------------------------------------------
-      # 5. Stabilny DNS
-      # ------------------------------------------------------------
-      - name: Configure DNS
+      - name: Clone clean upstream vyos-build (sagitta)
         run: |
-          sudo bash -c 'echo "nameserver 1.1.1.1" > /etc/resolv.conf'
-          sudo bash -c 'echo "nameserver 8.8.8.8" >> /etc/resolv.conf'
-          cat /etc/resolv.conf
+          set -eux
+          git clone --depth 1 --branch sagitta https://github.com/vyos/vyos-build.git
+          cd vyos-build
+          git status
 
-      # ------------------------------------------------------------
-      # 6. BUILD – KANONICZNY ENTRYPOINT
-      # ------------------------------------------------------------
-      - name: Build VyOS Sagitta ISO
+      - name: Force sterile live-build environment
         run: |
-          set -e
-          cd "${BUILD_DIR}"
-          sudo ./build-vyos-image iso
+          set -eux
+          cd vyos-build
 
-      # ------------------------------------------------------------
-      # 7. Artefakty
-      # ------------------------------------------------------------
-      - name: Upload build artifacts
-        if: success() || failure()
+          # HARD RESET anything cached
+          rm -rf .build live-build cache || true
+          rm -rf /var/cache/live-build || true
+
+          # NO ubuntu mirrors, EVER
+          sed -i 's|archive.ubuntu.com|deb.debian.org|g' scripts/image-build/*.py || true
+
+      - name: Build VyOS ISO (NO CACHE)
+        run: |
+          set -eux
+          cd vyos-build
+
+          export VYOS_BUILD_FLAVOR=sagitta
+          export LB_NO_CACHE=true
+
+          ./build-vyos-image \
+            --architecture amd64 \
+            --build-by "github-actions" \
+            --build-type release \
+            --version 1.4.0-sagitta-custom
+
+      - name: Upload ISO artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vyos-sagitta-build
-          path: |
-            vyos-build/build
-            vyos-build/live
-            vyos-build/*.log
+          name: vyos-1.4-sagitta-iso
+          path: vyos-build/build/*.iso
