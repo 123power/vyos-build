@@ -45,19 +45,6 @@ jobs:
         sudo bash -c 'echo "nameserver 8.8.8.8" >>/etc/resolv.conf || true'
         cat /etc/resolv.conf
 
-    - name: Sanity check: ensure no poisoned 'buster' sources in upstream
-      run: |
-        cd "${{ env.BUILD_DIR }}"
-        if grep -R --line-number "deb .*buster" . || grep -R --line-number "\"buster\"" data || grep -R --line-number "buster" config ; then
-          echo "WARNING: found 'buster' in upstream clone (will replace with bookworm/archive where applicable)"
-          # Two options: fail fast (safe) or attempt auto-fix. Here we auto-fix to bookworm for sagitta.
-          # If you prefer fail-fast, replace next 2 lines with: exit 1
-          git grep -l "buster" | xargs -r sed -i 's/buster/bookworm/g'
-          git grep -n "buster" || true
-        else
-          echo "No buster occurrences found in upstream clone."
-        fi
-
     - name: (optional) patch sources to archive for any leftover buster -> archive.debian.org
       if: always()
       run: |
