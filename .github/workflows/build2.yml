@@ -41,7 +41,7 @@ jobs:
           git submodule update --init --recursive || true
 
       # ------------------------------------------------------------
-      # 4. Zależności systemowe + Python
+      # 4. Zależności systemowe + Python (KOMPLET)
       # ------------------------------------------------------------
       - name: Install build dependencies (system + python)
         run: |
@@ -56,13 +56,15 @@ jobs:
             qemu-utils \
             wget \
             xz-utils \
+            devscripts \
             python3 \
             python3-pip \
             python3-venv \
             python3-jinja2 \
             python3-psutil \
             python3-git \
-            python3-tomli
+            python3-tomli \
+            python3-pystache
 
       # ------------------------------------------------------------
       # 5. Stabilny DNS
