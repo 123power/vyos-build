@@ -1,5 +1,6 @@
 name: Build-VyOS-Sagitta-LTS
-on: workflow_dispatch
+on:
+  workflow_dispatch: # To aktywuje przycisk manualny
 
 jobs:
   build:
@@ -7,13 +8,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: sagitta # To jest kluczowe - budujemy kod z sagitty
+          ref: sagitta # Budujemy kod ze stabilnej gałęzi 1.4
 
       - name: Build ISO
         run: |
           sudo rm -rf config/ build/ .build/
-          docker run --rm --privileged -v $(pwd):/vyos -w /vyos vyos/vyos-build:sagitta \
-          sudo ./build-vyos-image iso --architecture amd64 --build-by "Marcin-PRO" --build-type release
+          docker run --rm --privileged -v $(pwd):/vyos -w /vyos vyos/vyos-build:sagitta sudo ./build-vyos-image iso --architecture amd64 --build-by "Marcin-PRO" --build-type release
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
