@@ -1,28 +1,97 @@
-name: Build-VyOS-Sagitta-LTS-STABLE
+name: Clean VyOS Sagitta build (use upstream)
+
 on:
-  workflow_dispatch: # To włącza przycisk manualny
+  workflow_dispatch:
+  push:
+    branches: [ "sagitta", "main" ]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build-sagitta-clean:
+    runs-on: ubuntu-22.04
+    env:
+      UPSTREAM_REPO: https://github.com/vyos/vyos-build.git
+      UPSTREAM_BRANCH: sagitta
+      BUILD_DIR: upstream-vyos-build
+      DEBIAN_FRONTEND: noninteractive
+
     steps:
-      - name: Checkout Official Source
-        uses: actions/checkout@v4
-        with:
-          repository: vyos/vyos-build # Pobieramy z oficjalnego źródła, nie z Twojego forka!
-          ref: sagitta # Wybieramy stabilną wersję 1.4
-          fetch-depth: 0
+    - name: Checkout this repo (fork)
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-      - name: Build VyOS ISO
-        run: |
-          # Pełne czyszczenie przed startem
-          sudo rm -rf config/ build/ .build/
-          # Budowanie obrazu w oficjalnym kontenerze
-          docker run --rm --privileged -v $(pwd):/vyos -w /vyos vyos/vyos-build:sagitta \
-          sudo ./build-vyos-image iso --architecture amd64 --build-by "123power-PRO" --build-type release
+    # --- clone upstream clean copy (ignores any files in your fork) ---
+    - name: Clone upstream vyos-build (clean)
+      run: |
+        git clone --depth 1 --branch "${{ env.UPSTREAM_BRANCH }}" "${{ env.UPSTREAM_REPO }}" "${{ env.BUILD_DIR }}"
+        ls -la "${{ env.BUILD_DIR }}"
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: VyOS-1.4-Sagitta-ISO
-          path: build/*.iso
+    - name: Init submodules in upstream (if any)
+      run: |
+        cd "${{ env.BUILD_DIR }}"
+        git submodule sync --recursive || true
+        git submodule update --init --recursive --depth 1 || true
+
+    - name: Install build deps (live-build + helpers)
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y --no-install-recommends ca-certificates curl gnupg2 debootstrap live-build pbuilder qemu-utils wget xz-utils
+      # optionally cache apt between runs - omitted for brevity
+
+    - name: Force DNS (workaround for intermittent resolver errors)
+      run: |
+        # prefer public resolvers for reliability inside runner
+        sudo bash -c 'echo "nameserver 1.1.1.1" >/etc/resolv.conf || true'
+        sudo bash -c 'echo "nameserver 8.8.8.8" >>/etc/resolv.conf || true'
+        cat /etc/resolv.conf
+
+    - name: Sanity check: ensure no poisoned 'buster' sources in upstream
+      run: |
+        cd "${{ env.BUILD_DIR }}"
+        if grep -R --line-number "deb .*buster" . || grep -R --line-number "\"buster\"" data || grep -R --line-number "buster" config ; then
+          echo "WARNING: found 'buster' in upstream clone (will replace with bookworm/archive where applicable)"
+          # Two options: fail fast (safe) or attempt auto-fix. Here we auto-fix to bookworm for sagitta.
+          # If you prefer fail-fast, replace next 2 lines with: exit 1
+          git grep -l "buster" | xargs -r sed -i 's/buster/bookworm/g'
+          git grep -n "buster" || true
+        else
+          echo "No buster occurrences found in upstream clone."
+        fi
+
+    - name: (optional) patch sources to archive for any leftover buster -> archive.debian.org
+      if: always()
+      run: |
+        cd "${{ env.BUILD_DIR }}"
+        # Replace deb.debian.org lines for buster -> archive.debian.org (if any left)
+        find . -type f -name '*.list' -o -name '*.sources' -o -name '*.cfg' | xargs -r grep -Il "deb.debian.org.*buster" | xargs -r sed -i 's|deb.debian.org/debian|archive.debian.org/debian|g'
+
+    - name: Start build (with retries + verbose logs)
+      run: |
+        set -o pipefail
+        cd "${{ env.BUILD_DIR }}"
+        # ensure failures leave logs
+        for i in 1 2 3; do
+          echo "Attempt $i: lb build (logs -> build.log)"
+          sudo lb build 2>&1 | tee build.log || RC=$?
+          if [ -z "${RC}" ]; then
+            echo "lb build succeeded"
+            break
+          else
+            echo "lb build failed (rc=${RC}), saving log and retrying after short sleep"
+            sleep 15
+          fi
+        done
+        if [ ! -f live/build/ ] && [ "${RC}" != "" ]; then
+          echo "Final failure: See build.log below"
+          tail -n 200 build.log || true
+          exit ${RC}
+        fi
+
+    - name: Upload build artifacts (ISO/log)
+      if: success() || failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: vyos-sagitta-build
+        path: |
+          upstream-vyos-build/build.log
+          upstream-vyos-build/live
