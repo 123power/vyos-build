@@ -1,6 +1,6 @@
 name: Build-VyOS-Sagitta-LTS
 on:
-  workflow_dispatch: # To aktywuje przycisk manualny
+  workflow_dispatch: # To mu
 
 jobs:
   build:
