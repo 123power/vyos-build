@@ -19,13 +19,13 @@ jobs:
 
     steps:
       # ------------------------------------------------------------
-      # 1. Checkout (tylko po to, żeby workflow istniał w repo)
+      # 1. Checkout (tylko po to, żeby workflow istniał)
       # ------------------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
       # ------------------------------------------------------------
-      # 2. Pobranie CZYSTEGO upstream vyos-build (ignoruje fork)
+      # 2. Pobranie CZYSTEGO upstream vyos-build
       # ------------------------------------------------------------
       - name: Clone upstream vyos-build (Sagitta)
         run: |
@@ -33,7 +33,7 @@ jobs:
           ls -la "${BUILD_DIR}"
 
       # ------------------------------------------------------------
-      # 3. Submodules (jeśli są)
+      # 3. Submodules
       # ------------------------------------------------------------
       - name: Init submodules
         run: |
@@ -41,9 +41,9 @@ jobs:
           git submodule update --init --recursive || true
 
       # ------------------------------------------------------------
-      # 4. Zależności buildowe
+      # 4. Zależności systemowe + Python
       # ------------------------------------------------------------
-      - name: Install build dependencies
+      - name: Install build dependencies (system + python)
         run: |
           sudo apt-get update -y
           sudo apt-get install -y --no-install-recommends \
@@ -55,10 +55,17 @@ jobs:
             pbuilder \
             qemu-utils \
             wget \
-            xz-utils
+            xz-utils \
+            python3 \
+            python3-pip \
+            python3-venv \
+            python3-jinja2 \
+            python3-psutil \
+            python3-git \
+            python3-tomli
 
       # ------------------------------------------------------------
-      # 5. Stabilny DNS (eliminuje losowe błędy resolve)
+      # 5. Stabilny DNS
       # ------------------------------------------------------------
       - name: Configure DNS
         run: |
@@ -67,16 +74,16 @@ jobs:
           cat /etc/resolv.conf
 
       # ------------------------------------------------------------
-      # 6. BUILD – JEDYNA POPRAWNA METODA
+      # 6. BUILD – jedyna poprawna metoda
       # ------------------------------------------------------------
-      - name: Build VyOS Sagitta ISO (official build entrypoint)
+      - name: Build VyOS Sagitta ISO
         run: |
           set -e
           cd "${BUILD_DIR}"
           sudo ./build-vyos-image iso
 
       # ------------------------------------------------------------
-      # 7. Upload artefaktów (ISO + logi)
+      # 7. Artefakty
       # ------------------------------------------------------------
       - name: Upload build artifacts
         if: success() || failure()
