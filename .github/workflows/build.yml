@@ -1,4 +1,4 @@
-name: Build-VyOS-Sagitta-LTS
+name: Build-VyOS-Sagitta-STABILIZED
 on:
   workflow_dispatch:
 
@@ -6,17 +6,24 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: sagitta
+      - name: Checkout Fork
+        uses: actions/checkout@v4
 
+      - name: Sync with Official Upstream (Forensic Clean)
+        run: |
+          # Wymuszamy pobranie czystego kodu z oficjalnego repozytorium VyOS
+          git remote add upstream https://github.com/vyos/vyos-build.git
+          git fetch upstream sagitta
+          git reset --hard upstream/sagitta
+          
       - name: Build ISO
         run: |
-          sudo rm -rf config/ build/ .build/
-          docker run --rm --privileged -v $(pwd):/vyos -w /vyos vyos/vyos-build:sagitta sudo ./build-vyos-image iso --architecture amd64 --build-by "Marcin-PRO" --build-type release
+          # Uruchamiamy build na 100% czystym kodzie
+          docker run --rm --privileged -v $(pwd):/vyos -w /vyos vyos/vyos-build:sagitta \
+          sudo ./build-vyos-image iso --architecture amd64 --build-by "123power-PRO" --build-type release
 
-      - name: Upload Artifact
+      - name: Upload ISO
         uses: actions/upload-artifact@v4
         with:
-          name: VyOS-ISO-Package
+          name: VyOS-LTS-Final-ISO
           path: build/*.iso
