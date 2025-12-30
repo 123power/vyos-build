@@ -1,29 +1,28 @@
 name: Build-VyOS-Sagitta-LTS-STABLE
 on:
-  workflow_dispatch:
+  workflow_dispatch: # To włącza przycisk manualny
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout (Clean Start)
+      - name: Checkout Official Source
         uses: actions/checkout@v4
         with:
-          repository: vyos/vyos-build # Budujemy z OFICJALNEGO repo, nie z Twojego forka!
-          ref: sagitta
+          repository: vyos/vyos-build # Pobieramy z oficjalnego źródła, nie z Twojego forka!
+          ref: sagitta # Wybieramy stabilną wersję 1.4
           fetch-depth: 0
 
-      - name: Build ISO (The PRO Way)
+      - name: Build VyOS ISO
         run: |
-          # Czyścimy środowisko przed startem
-          sudo rm -rf config/ .build/ build/
-          
-          # Uruchamiamy oficjalny kontener budujący
+          # Pełne czyszczenie przed startem
+          sudo rm -rf config/ build/ .build/
+          # Budowanie obrazu w oficjalnym kontenerze
           docker run --rm --privileged -v $(pwd):/vyos -w /vyos vyos/vyos-build:sagitta \
           sudo ./build-vyos-image iso --architecture amd64 --build-by "123power-PRO" --build-type release
 
-      - name: Upload Finished ISO
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: VyOS-1.4-Sagitta-LTS
+          name: VyOS-1.4-Sagitta-ISO
           path: build/*.iso
